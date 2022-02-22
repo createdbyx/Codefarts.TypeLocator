@@ -14,13 +14,13 @@ namespace Codefarts.TypeLocator;
 public class TypeLocator
 {
     //  private readonly Dictionary<string, IEnumerable<Type>> previouslyCreatedTypes;
-    private Func<Assembly, bool> filter;
+   // private Func<Assembly, bool> filter;
 
-    public TypeLocator()
-    {
-        this.filter = new Func<Assembly, bool>(x => !x.FullName.StartsWith("System") && !x.FullName.StartsWith("Microsoft"));
+  //  public TypeLocator()
+   // {
+   //     this.filter = new Func<Assembly, bool>(x => !x.FullName.StartsWith("System") && !x.FullName.StartsWith("Microsoft"));
         // this.previouslyCreatedTypes = new Dictionary<string, IEnumerable<Type>>();
-    }
+    //}
 
     public IEnumerable<Type> FindTypes(Func<Type, bool> typeFilter, IEnumerable<string>? assemblyFiles = null,
                                        AssemblyLoadContext? context = null)
@@ -40,7 +40,7 @@ public class TypeLocator
                 return foundTypes;
             }
 
-            if (this.SearchForAssemblies(typeFilter, assemblyFiles, context, out foundTypes))
+            if (this.SearchAssemblies(typeFilter, assemblyFiles, context, out foundTypes))
             {
                 return foundTypes;
             }
@@ -58,7 +58,7 @@ public class TypeLocator
         // search through all loaded assemblies
         var assemblies = AppDomain.CurrentDomain.GetAssemblies();
         var filteredAssemblies = assemblies.AsParallel();
-        filteredAssemblies = filteredAssemblies.Where(this.filter);
+       // filteredAssemblies = filteredAssemblies.Where(this.filter);
         var results = new List<Type>();
         foreach (var asm in filteredAssemblies)
         {
@@ -103,26 +103,30 @@ public class TypeLocator
         return item.Any();
     }
 
-    private bool SearchForAssemblies(Func<Type, bool> typeFilter, IEnumerable<string>? assemblyFiles, AssemblyLoadContext? context,
-                                     out IEnumerable<Type> foundTypes)
+    private bool SearchAssemblies(Func<Type, bool> typeFilter, IEnumerable<string>? assemblyFiles, AssemblyLoadContext? context,
+                                  out IEnumerable<Type> foundTypes)
     {
         // check each file
+        var results = new List<Type>();
+#if NETCOREAPP3_1_OR_GREATER
+        var assemblyLoadContext = context == null ? AssemblyLoadContext.Default : context;
+#endif
+
         foreach (var file in assemblyFiles.Where(x => File.Exists(x)))
         {
 #if NETCOREAPP3_1_OR_GREATER
-            var assemblyLoadContext = context == null ? AssemblyLoadContext.Default : context;
             var assembly = assemblyLoadContext.LoadFromAssemblyPath(file);
 #else
-                var assembly = Assembly.LoadFrom(file);
+            var assembly = Assembly.LoadFrom(file);
 #endif
             if (this.GetTypesFromAssembly(typeFilter, assembly, out foundTypes))
             {
-                return true;
+                results.AddRange(foundTypes);
             }
         }
 
-        foundTypes = null;
-        return false;
+        foundTypes = results;
+        return results.Any();
     }
 
     // private bool CreateTypeFromCache(Func<Type,bool> typeName, bool cacheView, out IEnumerable<Type> instanciatedObject)
