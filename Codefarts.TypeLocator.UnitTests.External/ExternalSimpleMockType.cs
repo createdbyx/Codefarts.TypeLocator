@@ -1,5 +1,5 @@
 ﻿namespace Codefarts.TypeLocator.UnitTests.External;
 
-public class ExternalSimpleType
+public class ExternalSimpleMockType
 {
 }

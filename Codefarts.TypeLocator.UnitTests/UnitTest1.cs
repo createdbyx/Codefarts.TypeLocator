@@ -65,35 +65,33 @@ public class UnitTest1
         var locator = new TypeLocator();
         var rootPath = Path.GetDirectoryName(this.GetType().Assembly.Location);
         var assemblyFiles = new[] { Path.Combine(rootPath, "Codefarts.TypeLocator.UnitTests.External.dll") };
-        Assert.ThrowsException<TypeLoadException>(() =>
-        {
-            var type = locator.FindTypesByName("MissingExternalSimpleType", assemblyFiles);
-            Assert.AreEqual(0, type.Count());
-        });
+
+        var type = locator.FindTypesByName("MissingExternalSimpleType", assemblyFiles);
+        Assert.AreEqual(0, type.Count());
     }
 
     [TestMethod]
     public void WillForceDomainScan()
     {
         var locator = new TypeLocator();
-        var type = locator.FindTypesByName(nameof(SimpleType));
+        var type = locator.FindTypesByName(nameof(SimpleMockType));
         Assert.AreEqual(1, type.Count());
         var item = type.FirstOrDefault();
-        Assert.AreEqual(nameof(SimpleType), item.Name);
+        Assert.AreEqual(nameof(SimpleMockType), item.Name);
     }
 
     [TestMethod]
     public void WillUseCache()
     {
         var locator = new TypeLocator();
-        var type = locator.FindTypesByName(nameof(SimpleType));
+        var type = locator.FindTypesByName(nameof(SimpleMockType));
         Assert.AreEqual(1, type.Count());
         var item = type.FirstOrDefault();
-        Assert.AreEqual(nameof(SimpleType), item.Name);
+        Assert.AreEqual(nameof(SimpleMockType), item.Name);
 
-        var anotherType = locator.FindTypesByName(nameof(SimpleType));
+        var anotherType = locator.FindTypesByName(nameof(SimpleMockType));
         Assert.AreEqual(1, anotherType.Count());
         item = anotherType.FirstOrDefault();
-        Assert.AreEqual(nameof(SimpleType), item.Name);
+        Assert.AreEqual(nameof(SimpleMockType), item.Name);
     }
 }

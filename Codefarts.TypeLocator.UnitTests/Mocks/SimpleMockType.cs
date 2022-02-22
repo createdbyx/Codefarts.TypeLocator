@@ -1,6 +1,6 @@
 ﻿namespace Codefarts.TypeLocator.UnitTests.Mocks;
 
-public class SimpleType
+public class SimpleMockType
 {
     
 }
