@@ -23,7 +23,8 @@ public class TypeLocator
             IEnumerable<Type> asmFileTypes;
 
             // if not in cache scan for
-            this.ScanDomainForType(typeFilter, out domainTypes);
+            this.ScanAssemblies(typeFilter, AppDomain.CurrentDomain.GetAssemblies(), out domainTypes);
+
             this.SearchAssemblies(typeFilter, assemblyFiles, context, out asmFileTypes);
             return domainTypes.Union(asmFileTypes);
         }
@@ -33,17 +34,14 @@ public class TypeLocator
         }
     }
 
-    private bool ScanDomainForType(Func<Type, bool> typeFilter, out IEnumerable<Type> foundTypes)
+    private bool ScanAssemblies(Func<Type, bool> typeFilter, IEnumerable<Assembly> assemblies, out IEnumerable<Type> foundTypes)
     {
         // search through all loaded assemblies
-        var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
         var results = assemblies.AsParallel().SelectMany(asm => asm.GetTypes().Where(typeFilter));
-
         foundTypes = results;
         return results.Any();
     }
-
+ 
     private bool SearchAssemblies(Func<Type, bool> typeFilter, IEnumerable<string>? assemblyFiles, AssemblyLoadContext? context,
                                   out IEnumerable<Type> foundTypes)
     {
@@ -52,17 +50,25 @@ public class TypeLocator
         var assemblyLoadContext = context == null ? AssemblyLoadContext.Default : context;
 #endif
 
-        var results = assemblyFiles == null
-            ? Enumerable.Empty<Type>()
-            : assemblyFiles.AsParallel().SelectMany(file =>
+        IEnumerable<Type> results;
+        if (assemblyFiles == null)
+        {
+            results = Enumerable.Empty<Type>();
+        }
+        else
+        {
+            var assemblies = assemblyFiles.AsParallel().Select(file =>
             {
 #if NETCOREAPP3_1_OR_GREATER
                 var assembly = assemblyLoadContext.LoadFromAssemblyPath(file);
 #else
                 var assembly = Assembly.LoadFrom(file);
 #endif
-                return assembly.GetTypes().Where(typeFilter);
+                return assembly;
             });
+
+            this.ScanAssemblies(typeFilter, assemblies, out results);
+        }
 
         foundTypes = results;
         return results.Any();
