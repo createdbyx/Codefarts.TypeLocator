@@ -13,52 +13,47 @@ namespace Codefarts.TypeLocator;
 
 public class TypeLocator
 {
-    private readonly Dictionary<string, IEnumerable<Type>> previouslyCreatedTypes;
+    //  private readonly Dictionary<string, IEnumerable<Type>> previouslyCreatedTypes;
     private Func<Assembly, bool> filter;
 
     public TypeLocator()
     {
         this.filter = new Func<Assembly, bool>(x => !x.FullName.StartsWith("System") && !x.FullName.StartsWith("Microsoft"));
-        this.previouslyCreatedTypes = new Dictionary<string, IEnumerable<Type>>();
+        // this.previouslyCreatedTypes = new Dictionary<string, IEnumerable<Type>>();
     }
 
-    public IEnumerable<Type> FindTypes(string typeName, bool cacheType, IEnumerable<string>? assemblyFiles = null,
+    public IEnumerable<Type> FindTypes(Func<Type, bool> typeFilter, IEnumerable<string>? assemblyFiles = null,
                                        AssemblyLoadContext? context = null)
     {
-        if (string.IsNullOrWhiteSpace(typeName))
-        {
-            throw new ArgumentException(nameof(typeName));
-        }
-
         try
         {
             // attempt to create from cache first
-            IEnumerable<Type> instanciatedObject;
-            if (this.CreateTypeFromCache(typeName, cacheType, out instanciatedObject))
-            {
-                return instanciatedObject;
-            }
+            IEnumerable<Type> foundTypes;
+            // if (this.CreateTypeFromCache(typeName, cacheType, out instanciatedObject))
+            // {
+            //     return instanciatedObject;
+            // }
 
             // if not in cache scan for
-            if (this.ScanDomainForType(typeName, cacheType, out instanciatedObject))
+            if (this.ScanDomainForType(typeFilter, out foundTypes))
             {
-                return instanciatedObject;
+                return foundTypes;
             }
 
-            if (this.SearchForAssemblies(typeName, cacheType, assemblyFiles, context, out instanciatedObject))
+            if (this.SearchForAssemblies(typeFilter, assemblyFiles, context, out foundTypes))
             {
-                return instanciatedObject;
+                return foundTypes;
             }
-
-            throw new TypeLoadException($"Type '{typeName}' not be found.");
         }
         catch (Exception ex)
         {
-            throw new TypeLoadException($"Type '{typeName}' could not be found.", ex);
+            throw new TypeLoadException($"Type '{typeFilter}' could not be found.", ex);
         }
+
+        return Enumerable.Empty<Type>();
     }
 
-    private bool ScanDomainForType(string viewName, bool cacheViewModel, out IEnumerable<Type> foundTypes)
+    private bool ScanDomainForType(Func<Type, bool> typeFilter, out IEnumerable<Type> foundTypes)
     {
         // search through all loaded assemblies
         var assemblies = AppDomain.CurrentDomain.GetAssemblies();
@@ -67,7 +62,7 @@ public class TypeLocator
         var results = new List<Type>();
         foreach (var asm in filteredAssemblies)
         {
-            if (this.GetTypesFromAssembly(viewName, asm, cacheViewModel, out foundTypes))
+            if (this.GetTypesFromAssembly(typeFilter, asm, out foundTypes))
             {
                 results.AddRange(foundTypes);
             }
@@ -77,7 +72,7 @@ public class TypeLocator
         return results.Count > 0;
     }
 
-    private bool GetTypesFromAssembly(string typeName, Assembly asm, bool cacheType, out IEnumerable<Type> instanciatedObject)
+    private bool GetTypesFromAssembly(Func<Type, bool> typeFilter, Assembly asm, out IEnumerable<Type> foundTypes)
     {
         if (asm == null)
         {
@@ -85,31 +80,31 @@ public class TypeLocator
         }
 
         var types = asm.GetTypes().AsParallel();
-        var typesFound = types.Where(x => x.IsClass && !x.IsAbstract && x != typeof(string) && x.Name.Equals(typeName, StringComparison.Ordinal));
+        var typesFound = types.Where(x => x.IsClass && !x.IsAbstract && x != typeof(string) && typeFilter(x));
 
         var item = typesFound;
 
-        if (cacheType)
-        {
-            // successfully created so add type to cache for faster access
-            lock (this.previouslyCreatedTypes)
-            {
-                IEnumerable<Type> current;
-                if (!this.previouslyCreatedTypes.TryGetValue(typeName, out current))
-                {
-                    current = item;
-                }
+        // if (cacheType)
+        // {
+        //     // successfully created so add type to cache for faster access
+        //     lock (this.previouslyCreatedTypes)
+        //     {
+        //         IEnumerable<Type> current;
+        //         if (!this.previouslyCreatedTypes.TryGetValue(typeFilter, out current))
+        //         {
+        //             current = item;
+        //         }
+        //
+        //         this.previouslyCreatedTypes[typeFilter] = current.Union(item).ToList();
+        //     }
+        // }
 
-                this.previouslyCreatedTypes[typeName] = current.Union(item).ToList();
-            }
-        }
-
-        instanciatedObject = item;
+        foundTypes = item;
         return item.Any();
     }
 
-    private bool SearchForAssemblies(string typeName, bool cacheView, IEnumerable<string>? assemblyFiles, AssemblyLoadContext? context,
-                                     out IEnumerable<Type> viewModelRef)
+    private bool SearchForAssemblies(Func<Type, bool> typeFilter, IEnumerable<string>? assemblyFiles, AssemblyLoadContext? context,
+                                     out IEnumerable<Type> foundTypes)
     {
         // check each file
         foreach (var file in assemblyFiles.Where(x => File.Exists(x)))
@@ -120,27 +115,27 @@ public class TypeLocator
 #else
                 var assembly = Assembly.LoadFrom(file);
 #endif
-            if (this.GetTypesFromAssembly(typeName, assembly, cacheView, out viewModelRef))
+            if (this.GetTypesFromAssembly(typeFilter, assembly, out foundTypes))
             {
                 return true;
             }
         }
 
-        viewModelRef = null;
+        foundTypes = null;
         return false;
     }
 
-    private bool CreateTypeFromCache(string typeName, bool cacheView, out IEnumerable<Type> instanciatedObject)
-    {
-        if (this.previouslyCreatedTypes.ContainsKey(typeName))
-        {
-            var type = this.previouslyCreatedTypes[typeName];
-
-            instanciatedObject = type;
-            return true;
-        }
-
-        instanciatedObject = null;
-        return false;
-    }
+    // private bool CreateTypeFromCache(Func<Type,bool> typeName, bool cacheView, out IEnumerable<Type> instanciatedObject)
+    // {
+    //     if (this.previouslyCreatedTypes.ContainsKey(typeName))
+    //     {
+    //         var type = this.previouslyCreatedTypes[typeName];
+    //
+    //         instanciatedObject = type;
+    //         return true;
+    //     }
+    //
+    //     instanciatedObject = null;
+    //     return false;
+    // }
 }
