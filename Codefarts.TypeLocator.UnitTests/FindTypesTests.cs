@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Codefarts.TypeLocator.UnitTests;
@@ -7,9 +8,8 @@ namespace Codefarts.TypeLocator.UnitTests;
 public class FindTypesTests
 {
     [TestMethod]
-    public void NullTypeName()
+    public void NullFilter()
     {
-        var results = TypeLocator.FindTypes(null);
-        //Assert.ThrowsException<ArgumentException>(() => TypeLocator.FindTypes(null));
+        Assert.ThrowsException<ArgumentNullException>(() => TypeLocator.FindTypes(null));
     }
 }

@@ -8,14 +8,19 @@ using System.Runtime.Loader;
 
 namespace Codefarts.TypeLocator;
 
-public class TypeLocator
+public static class TypeLocator
 {
     public static IEnumerable<Type> FindTypes(Func<Type, bool> typeFilter, IEnumerable<string>? assemblyFiles = null,
                                               AssemblyLoadContext? context = null)
     {
+        if (typeFilter == null)
+        {
+            throw new ArgumentNullException(nameof(typeFilter));
+        }
+
         try
         {
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies().AsEnumerable();
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies().ToArray();
             var domainTypes = assemblies.AsParallel().SelectMany(asm => asm.GetTypes().Where(typeFilter));
 
             var assemblyLoadContext = context == null ? AssemblyLoadContext.Default : context;
@@ -24,7 +29,7 @@ public class TypeLocator
             {
                 var assembly = assemblyLoadContext.LoadFromAssemblyPath(file);
                 return assembly;
-            });
+            }).ToArray();
 
             var asmFileTypes = assemblies.AsParallel().SelectMany(asm => asm.GetTypes().Where(typeFilter));
             return domainTypes.Union(asmFileTypes);
