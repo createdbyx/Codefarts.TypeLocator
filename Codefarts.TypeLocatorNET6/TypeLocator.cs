@@ -10,8 +10,8 @@ namespace Codefarts.TypeLocator;
 
 public class TypeLocator
 {
-    public IEnumerable<Type> FindTypes(Func<Type, bool> typeFilter, IEnumerable<string>? assemblyFiles = null,
-                                       AssemblyLoadContext? context = null)
+    public static IEnumerable<Type> FindTypes(Func<Type, bool> typeFilter, IEnumerable<string>? assemblyFiles = null,
+                                              AssemblyLoadContext? context = null)
     {
         try
         {
@@ -33,5 +33,29 @@ public class TypeLocator
         {
             throw new TypeLoadException($"Unexpected exception thrown. See inner exception for details.", ex);
         }
+    }
+
+    public static IEnumerable<Type> FindTypesByName(string typeName,
+                                                    IEnumerable<string>? assemblyFiles = null,
+                                                    AssemblyLoadContext? context = null)
+    {
+        if (string.IsNullOrWhiteSpace(typeName))
+        {
+            throw new ArgumentException(nameof(typeName));
+        }
+
+        return FindTypes(x => x.Name.Equals(typeName, StringComparison.Ordinal), assemblyFiles, context);
+    }
+
+    public static IEnumerable<Type> FindTypesByFullName(string typeName,
+                                                        IEnumerable<string>? assemblyFiles = null,
+                                                        AssemblyLoadContext? context = null)
+    {
+        if (string.IsNullOrWhiteSpace(typeName))
+        {
+            throw new ArgumentException(nameof(typeName));
+        }
+
+        return FindTypes(x => x.FullName.Equals(typeName, StringComparison.Ordinal), assemblyFiles, context);
     }
 }

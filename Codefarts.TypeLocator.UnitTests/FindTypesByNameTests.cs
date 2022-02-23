@@ -12,31 +12,28 @@ public class FindTypesByNameTests
     [TestMethod]
     public void NullTypeName()
     {
-        var locator = new TypeLocator();
-        Assert.ThrowsException<ArgumentException>(() => locator.FindTypesByName(null));
+       // var locator = new TypeLocator();
+        Assert.ThrowsException<ArgumentException>(() => TypeLocator.FindTypesByName(null));
     }
 
     [TestMethod]
     public void WhitespaceTypeName()
     {
-        var locator = new TypeLocator();
-        Assert.ThrowsException<ArgumentException>(() => locator.FindTypesByName("   "));
+        Assert.ThrowsException<ArgumentException>(() => TypeLocator.FindTypesByName("   "));
     }
 
     [TestMethod]
     public void EmptyTypeName()
     {
-        var locator = new TypeLocator();
-        Assert.ThrowsException<ArgumentException>(() => locator.FindTypesByName(string.Empty));
+        Assert.ThrowsException<ArgumentException>(() => TypeLocator.FindTypesByName(string.Empty));
     }
 
     [TestMethod]
     public void FindExistingInExternalAssembly()
     {
-        var locator = new TypeLocator();
         var rootPath = Path.GetDirectoryName(this.GetType().Assembly.Location);
         var assemblyFiles = new[] { Path.Combine(rootPath, "Codefarts.TypeLocator.UnitTests.External.dll") };
-        var type = locator.FindTypesByName("ExternalSimpleMockType", assemblyFiles);
+        var type = TypeLocator.FindTypesByName("ExternalSimpleMockType", assemblyFiles);
         Assert.AreEqual(1, type.Count());
         var item = type.FirstOrDefault();
         Assert.AreEqual("ExternalSimpleMockType", item.Name);
@@ -45,15 +42,14 @@ public class FindTypesByNameTests
     [TestMethod]
     public void FindExistingInExternalAssemblyInCache()
     {
-        var locator = new TypeLocator();
         var rootPath = Path.GetDirectoryName(this.GetType().Assembly.Location);
         var assemblyFiles = new[] { Path.Combine(rootPath, "Codefarts.TypeLocator.UnitTests.External.dll") };
-        var type = locator.FindTypesByName("ExternalSimpleMockType", assemblyFiles);
+        var type = TypeLocator.FindTypesByName("ExternalSimpleMockType", assemblyFiles);
         Assert.AreEqual(1, type.Count());
         var item = type.FirstOrDefault();
         Assert.AreEqual("ExternalSimpleMockType", item.Name);
 
-        var anotherType = locator.FindTypesByName("ExternalSimpleMockType");
+        var anotherType = TypeLocator.FindTypesByName("ExternalSimpleMockType");
         Assert.AreEqual(1, anotherType.Count());
         item = anotherType.FirstOrDefault();
         Assert.AreEqual("ExternalSimpleMockType", item.Name);
@@ -62,19 +58,17 @@ public class FindTypesByNameTests
     [TestMethod]
     public void FindMissingInExternalAssembly()
     {
-        var locator = new TypeLocator();
         var rootPath = Path.GetDirectoryName(this.GetType().Assembly.Location);
         var assemblyFiles = new[] { Path.Combine(rootPath, "Codefarts.TypeLocator.UnitTests.External.dll") };
 
-        var type = locator.FindTypesByName("MissingExternalSimpleMockType", assemblyFiles);
+        var type = TypeLocator.FindTypesByName("MissingExternalSimpleMockType", assemblyFiles);
         Assert.AreEqual(0, type.Count());
     }
 
     [TestMethod]
     public void WillForceDomainScan()
     {
-        var locator = new TypeLocator();
-        var type = locator.FindTypesByName(nameof(SimpleMockType));
+        var type = TypeLocator.FindTypesByName(nameof(SimpleMockType));
         Assert.AreEqual(1, type.Count());
         var item = type.FirstOrDefault();
         Assert.AreEqual(nameof(SimpleMockType), item.Name);
@@ -83,13 +77,12 @@ public class FindTypesByNameTests
     [TestMethod]
     public void WillUseCache()
     {
-        var locator = new TypeLocator();
-        var type = locator.FindTypesByName(nameof(SimpleMockType));
+        var type = TypeLocator.FindTypesByName(nameof(SimpleMockType));
         Assert.AreEqual(1, type.Count());
         var item = type.FirstOrDefault();
         Assert.AreEqual(nameof(SimpleMockType), item.Name);
 
-        var anotherType = locator.FindTypesByName(nameof(SimpleMockType));
+        var anotherType = TypeLocator.FindTypesByName(nameof(SimpleMockType));
         Assert.AreEqual(1, anotherType.Count());
         item = anotherType.FirstOrDefault();
         Assert.AreEqual(nameof(SimpleMockType), item.Name);
