@@ -7,14 +7,14 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Codefarts.TypeLocator.UnitTests;
 
 [TestClass]
-public class UnitTest1
+public class FindTypesByNameTests
 {
-    // [TestMethod]
-    // public void NullTypeName()
-    // {
-    //     var locator = new TypeLocator();
-    //     Assert.ThrowsException<ArgumentException>(() => locator.FindTypes(new string(), false));
-    // }
+    [TestMethod]
+    public void NullTypeName()
+    {
+        var locator = new TypeLocator();
+        Assert.ThrowsException<ArgumentException>(() => locator.FindTypesByName(null));
+    }
 
     [TestMethod]
     public void WhitespaceTypeName()
